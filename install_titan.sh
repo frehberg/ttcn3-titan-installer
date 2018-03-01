@@ -194,7 +194,11 @@ setup_eclipse()
    ( cd eclipse; ./eclipse -application org.eclipse.equinox.p2.director -noSplash -repository "jar:file://${REPO}!/" -installIU TITAN_Designer.feature.group )
 
    ( cd eclipse; ./eclipse -application org.eclipse.equinox.p2.director -noSplash -repository "jar:file://${REPO}!/" -installIU TITAN_Executor.feature.group )
+
+   ( cd eclipse; ./eclipse -application org.eclipse.equinox.p2.director -noSplash -repository "jar:file://${REPO}!/" -installIU TITAN_Log_Viewer.feature.group )
    
+   ( cd eclipse; ./eclipse -application org.eclipse.equinox.p2.director -noSplash -repository "jar:file://${REPO}!/" -installIU Titanium.feature.group )
+
    popd
    sync
 }
