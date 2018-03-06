@@ -78,7 +78,6 @@ TTCN3_INST_DIR=${WORKSPACE_DIR}/titan.core/Install
 
 ## check required tooling
 abort_if_not_in_path curl
-abort_if_not_in_path git
 
 ## create the destination directory
 rm -rf  ${ECLIPSE_INST_DIR}
@@ -90,6 +89,8 @@ mkdir -p ${WORKSPACE_DIR}
 setup_ttcn3_compile()
 {
    echo "Checking out TTCN3 titan.core from github https://github.com/eclipse/titan.core.git"
+
+   abort_if_not_in_path git
 
    rm -rf "${BUILD_DIR}/titan.core"
 
