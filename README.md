@@ -33,3 +33,12 @@ The script `install_titan.sh` will download the packages from eclipse-project-pa
 Finally the corresponding environment variables will be added to `${HOME}/.bashrc`
 
 and a startup-script will be placed at: `${HOME}/bin/titan-ide`
+
+## TODOs
+
+- Use generic URL locations for latest eclipse, and latest builds of Titan-bins and Titan-Eclipse-Plugin
+- Parameterize installation prefix, instead of fix prefix ${HOME}/ttcn3-tools
+- Download and deploy protocol modules, for example UDP, IP, DHCP, etc. (not sure how protocol modules are added)
+- Port installer-script to Redhat/Suse and others.
+
+ 
