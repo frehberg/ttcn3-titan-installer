@@ -7,23 +7,25 @@ The installer-script requires a Debian-like system, such as Ubuntu or Debian. It
 
 At first the installer-script is checking for presence of certain deb-packages, being required by the build-process of Titan.
 
-The tools/scripts require the following system-packages on your host: ` curl git g++ expect libssl-dev libxml2-dev ibncurses5-dev flex bison xutils-dev default-jdk`
+The tools/scripts require the following system-packages (deb) on your host: 
+`curl git g++ expect libssl-dev libxml2-dev ibncurses5-dev flex bison xutils-dev default-jdk`
 
-Install them using the following commands (requires sudo/admin-permissions)
+The installer-script will terminate with error if these packages are not present on the host.
+
+Please install them using the following commands (requires sudo/admin-permissions)
 ```
 sudo apt-get install -y curl git g++ expect libssl-dev libxml2-dev
 sudo apt-get install -y libncurses5-dev flex bison xutils-dev
 sudo apt-get install -y default-jdk
 ```
 
-Afterwards the following command will download the TITAN-installer bash-script, and will execute it directly (no further sudo/admin-permissions required)
-
+Afterwards execute the following curl-command to install the Titan-IDE and Titan-binaries on the local host. The curl command will download the TITAN-installer bash-script `install_titan.sh`, and it will be executed  by `bash`  directly (no further sudo/admin-permissions required)
 
 ```
 curl https://raw.githubusercontent.com/frehberg/ttcn3-titan-installer/master/install_titan.sh  -sSf | bash
 ```
 
-The script will download the packages from eclipse-project-pages and will place the following tools in your workspace
+The script `install_titan.sh` will download the packages from eclipse-project-pages and will place the following tools in your workspace
 
 -   **eclipse**          ${HOME}/ttcn3-tools/eclipse
 -   **TTCN3 titan.core** ${HOME}/ttcn3-tools/titan.core/Install
