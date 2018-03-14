@@ -1,20 +1,21 @@
 #!/bin/bash 
 
 ECLIPSE_NAME=eclipse
-ENABLE_JNI=yes
-PRECOMPILED=yes
+PRECOMPILED=no
+
+ECLIPSE_VERSION=oxygen
 
 ECLIPSE_BASE_URL=http://ftp-stud.fht-esslingen.de/pub/Mirrors/eclipse/technology/epp/downloads/release/oxygen/2/eclipse-cpp-oxygen-2-linux-gtk-x86_64.tar.gz
-## ECLIPSE_BASE_URL=file:///home/${USER}/pkg/eclipse-cpp-oxygen-2-linux-gtk-x86_64.tar.gz
-
 ECLPSE_TITAN_URL=http://ftp-stud.fht-esslingen.de/pub/Mirrors/eclipse/titan/ttcn3-6.3.pl0-linux64-gcc5.4-ubuntu16.04.tgz
-## ECLPSE_TITAN_URL=file:///home/${USER}/pkg/ttcn3-6.3.pl0-linux64-gcc5.4-ubuntu16.04.tgz
-
 ECLIPSE_TITAN_PLUGIN_URL=http://ftp.fau.de/eclipse/titan/TITAN_Designer_and_Executor_plugin-6.3.pl0.zip
-## ECLIPSE_TITAN_PLUGIN_URL=file:///home/${USER}/pkg/TITAN_Designer_and_Executor_plugin-6.3.pl0.zip
-
 
 JDK_HOME=${JDK_HOME:-/usr/lib/jvm/default-java}
+
+## define the destination directories
+WORKSPACE_DIR=${HOME}/ttcn3-tools
+BUILD_DIR=${WORKSPACE_DIR}
+TTCN3_INST_DIR=${WORKSPACE_DIR}/titan.core/Install
+ECLIPSE_INST_DIR=${WORKSPACE_DIR}/${ECLIPSE_NAME}
 
 ##
 ##
@@ -39,7 +40,7 @@ abort_if_no_pkg()
 {
    for i in $@; do
       echo "Checking available package '$i'"
-      if ! dpkg -l | grep -E "\s.$1" >/dev/null; then
+      if ! dpkg -l | grep -E "\s.$i" >/dev/null; then
          echo "Error, package not installed on this host: '$i'"
          echo "       install package with the following command"
          echo "       sudo apt-get install -y $@"
@@ -56,10 +57,9 @@ assert_required_packages()
    # makedepend tools
    abort_if_no_pkg  xutils-dev
 
-   if test "$ENABLE_JNI"; then
-      # assert jdk is available
-      abort_if_no_pkg default-jdk
-   fi
+   # required for JNI
+   # assert jdk is available
+   abort_if_no_pkg default-jdk
 }
 
 ## Assert before creating TMP-directories
@@ -68,27 +68,40 @@ assert_required_packages
 ## create a temporary directory for pkg downloads
 PKG_DIR=`mktemp -d`
 
-
-
-## create the installation directory
-WORKSPACE_DIR=${HOME}/ttcn3-tools
-BUILD_DIR=${WORKSPACE_DIR}
-ECLIPSE_INST_DIR=${WORKSPACE_DIR}/${ECLIPSE_NAME}
-TTCN3_INST_DIR=${WORKSPACE_DIR}/titan.core/Install
-
-## check required tooling
-abort_if_not_in_path curl
-
 ## create the destination directory
 rm -rf  ${ECLIPSE_INST_DIR}
 mkdir -p ${WORKSPACE_DIR}
+
+
+spinner()
+{
+   ## hide the cursor
+   tput civis
+
+   local spinstr='|/-\'
+   printf " [%c]  " "$spinstr"
+   while read -N 100 chunk; do
+        printf "\b\b\b\b\b\b"
+        local temp=${spinstr#?}
+        local spinstr=$temp${spinstr%"$temp"}
+        printf " [%c]  " "$spinstr"
+    done
+    ## overwrite the spinner
+    printf "\b\b\b\b\b\b      "
+
+    ## return to original cursor position
+    printf "\b\b\b\b\b\b"
+    ## unhide the cursor
+    tput cnorm
+}
+
 
 ##
 ## build_core
 ##
 setup_ttcn3_compile()
 {
-   echo "Checking out TTCN3 titan.core from github https://github.com/eclipse/titan.core.git"
+   echo "Building TTCN3 Titan: https://github.com/eclipse/titan.core.git"
 
    abort_if_not_in_path git
 
@@ -117,18 +130,30 @@ JNI := yes
 GEN_PDF := no
 EOF
 
-   echo "------------setup------------"
-   cat Makefile.personal
-   echo "------------/setup------------"
+   ## echo "------------setup------------"
+   ## cat Makefile.personal
+   ## echo "------------/setup------------"
 
-   make
+   ## build
+   if ! make 2>&1 | tee -a blog | spinner; then
+      tail -n 50 blog
+      echo
+      echo "See the full error log in file 'blog'"
+      exit 1
+   fi
 
+   ## install
    export TTCN3_DIR=${TTCN3_INST_DIR}
    export PATH=${TTCN3_INST_DIR}/bin/:${PATH}
    export LD_LIBRARY_PATH=${TTCN3_INST_DIR}/lib:${LD_LIBRARY_PATH}
    
    echo "Installing TTCN3 titan.core binaries to ${TTCN3_INST_DIR}"
-   make install
+   if ! make install 2>&1 | tee -a blog | spinner; then
+      tail -n 50 blog
+      echo
+      echo "See the full error log in file 'blog'"
+      exit 1
+   fi
 
    popd
 }
@@ -178,14 +203,13 @@ setup_eclipse()
 {
    http_get "${ECLIPSE_BASE_URL}" "${PKG_DIR}"
    http_get "${ECLIPSE_TITAN_PLUGIN_URL}" "${PKG_DIR}"
-   http_get "${ECLPSE_TITAN_URL}" "${PKG_DIR}"
 
    ## get the filename of the ZIP
    REPO=`for i in  ${PKG_DIR}/TITAN_Designer_and_Executor_plugin*.zip; do echo $i; done`
 
    pushd ${WORKSPACE_DIR}
 
-   echo "Installing eclipse to ${ECLIPSE_INST_DIR}"
+   echo "Installing eclipse '${ECLIPSE_VERSION}' to ${ECLIPSE_INST_DIR}"
    rm -rf eclipse 
 
    tar xf ${PKG_DIR}/eclipse-*.tar.gz
@@ -210,6 +234,8 @@ setup_ttcn3_precompiled()
    ## Install the titan binaries 
    echo "Installing TTCN3 titan.core binaries to ${TTCN3_INST_DIR}"
 
+   http_get "${ECLPSE_TITAN_URL}" "${PKG_DIR}"
+
    rm -rf   ${TTCN3_INST_DIR}
    mkdir -p ${TTCN3_INST_DIR}
 
@@ -232,7 +258,7 @@ setup_titan_ide_bin()
    chmod +x  ${HOME}/bin/titan-ide
 }
 
-setup_eclipse
+# setup_eclipse
 
 if test "${PRECOMPILED}" = "yes"; then
    setup_ttcn3_precompiled
@@ -249,7 +275,6 @@ echo "   eclipse:          ${ECLIPSE_INST_DIR}"
 echo "   TTCN3 titan.core: ${TTCN3_INST_DIR}"
 echo
 echo "Now, execute TITAN IDE with command: ${HOME}/bin/titan-ide"
-
 
 
 
